@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model bitacora {
+  id_evento      Int          @id @default(autoincrement())
+  id_solicitud   Int
+  id_funcionario Int?
+  accion         String       @db.VarChar(50)
+  observaciones  String?
+  fecha_evento   DateTime     @default(now()) @db.Timestamp(6)
+  funcionario    funcionario? @relation(fields: [id_funcionario], references: [id_funcionario], onUpdate: NoAction, map: "fk_bitacora_funcionario")
+  solicitud      solicitud    @relation(fields: [id_solicitud], references: [id_solicitud], onDelete: Cascade, onUpdate: NoAction, map: "fk_bitacora_solicitud")
+
+  @@index([id_funcionario], map: "idx_bitacora_funcionario")
+  @@index([id_solicitud], map: "idx_bitacora_solicitud")
+}
+
+model duplicados {
+  id_duplicado                                           Int       @id @default(autoincrement())
+  rut                                                    String    @db.VarChar(12)
+  id_solicitud_original                                  Int
+  id_solicitud_detectada                                 Int
+  fecha_validacion                                       DateTime  @default(now()) @db.Timestamp(6)
+  solicitud_duplicados_id_solicitud_detectadaTosolicitud solicitud @relation("duplicados_id_solicitud_detectadaTosolicitud", fields: [id_solicitud_detectada], references: [id_solicitud], onDelete: Cascade, onUpdate: NoAction, map: "fk_dup_solicitud_detectada")
+  solicitud_duplicados_id_solicitud_originalTosolicitud  solicitud @relation("duplicados_id_solicitud_originalTosolicitud", fields: [id_solicitud_original], references: [id_solicitud], onDelete: Cascade, onUpdate: NoAction, map: "fk_dup_solicitud_original")
+
+  @@index([id_solicitud_detectada], map: "idx_dup_sol_detectada")
+  @@index([id_solicitud_original], map: "idx_dup_sol_original")
+}
+
+model funcionario {
+  id_funcionario                                      Int             @id @default(autoincrement())
+  rut                                                 String          @unique @db.VarChar(12)
+  nombre_completo                                     String          @db.VarChar(200)
+  correo                                              String          @unique @db.VarChar(150)
+  rol                                                 rol_funcionario @default(ANALISTA)
+  fecha_creacion                                      DateTime        @default(now()) @db.Timestamp(6)
+  bitacora                                            bitacora[]
+  revisados_revisados_revisado_porTofuncionario       revisados[]     @relation("revisados_revisado_porTofuncionario")
+  revisados_revisados_analista_propuestoTofuncionario revisados[]     @relation("revisados_analista_propuestoTofuncionario")
+  solicitud                                           solicitud[]
+}
+
+model revisados {
+  id_revision                                           Int                  @id @default(autoincrement())
+  id_solicitud                                          Int
+  fecha_revision                                        DateTime             @default(now()) @db.Timestamp(6)
+  diagnostico                                           String?              @db.VarChar(250)
+  origen_principal                                      origen_discapacidad?
+  origen_secundario                                     origen_discapacidad?
+  estado_revision                                       estado_revision_enum
+  observaciones                                         String?
+  revisado_por                                          Int?
+  analista_propuesto                                    Int?
+  derivado                                              Boolean              @default(false)
+  fecha_ingreso_original                                DateTime             @db.Timestamp(6)
+  funcionario_revisados_revisado_porTofuncionario       funcionario?         @relation("revisados_revisado_porTofuncionario", fields: [revisado_por], references: [id_funcionario], onUpdate: NoAction, map: "fk_rev_analista")
+  funcionario_revisados_analista_propuestoTofuncionario funcionario?         @relation("revisados_analista_propuestoTofuncionario", fields: [analista_propuesto], references: [id_funcionario], onUpdate: NoAction, map: "fk_rev_prop")
+  solicitud                                             solicitud            @relation(fields: [id_solicitud], references: [id_solicitud], onDelete: Cascade, onUpdate: NoAction, map: "fk_rev_sol")
+
+  @@index([analista_propuesto], map: "idx_revisados_propuesto")
+  @@index([revisado_por], map: "idx_revisados_revisado")
+  @@index([id_solicitud], map: "idx_revisados_sol")
+}
+
+model solicitud {
+  id_solicitud                                            Int                   @id @default(autoincrement())
+  id_usuario                                              Int
+  etapa                                                   etapa_solicitud_enum  @default(INGRESO)
+  estado                                                  estado_solicitud_enum @default(EN_CURSO)
+  asignado_a                                              Int?
+  fecha_ingreso                                           DateTime              @default(now()) @db.Timestamp(6)
+  fecha_modificacion                                      DateTime              @default(now()) @db.Timestamp(6)
+  bitacora                                                bitacora[]
+  duplicados_duplicados_id_solicitud_detectadaTosolicitud duplicados[]          @relation("duplicados_id_solicitud_detectadaTosolicitud")
+  duplicados_duplicados_id_solicitud_originalTosolicitud  duplicados[]          @relation("duplicados_id_solicitud_originalTosolicitud")
+  revisados                                               revisados[]
+  funcionario                                             funcionario?          @relation(fields: [asignado_a], references: [id_funcionario], map: "fk_solicitud_funcionario")
+  usuario                                                 usuario               @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade, map: "fk_solicitud_usuario")
+
+  @@index([asignado_a], map: "idx_solicitud_asignado_a")
+  @@index([id_usuario], map: "idx_solicitud_usuario")
+}
+
+model usuario {
+  id_usuario       Int         @id @default(autoincrement())
+  rut              String      @unique @db.VarChar(12)
+  nombres          String      @db.VarChar(100)
+  apellidos        String      @db.VarChar(100)
+  correo           String      @unique @db.VarChar(150)
+  telefono         String?     @db.VarChar(15)
+  nacionalidad     String      @db.VarChar(50)
+  fecha_nacimiento DateTime    @db.Date
+  edad_declarada   Int?        @db.SmallInt
+  sexo             sexo_enum
+  region           String      @db.VarChar(50)
+  comuna           String      @db.VarChar(50)
+  direccion        String?     @db.VarChar(200)
+  solicitud        solicitud[]
+}
+
+enum estado_revision_enum {
+  APROBADO
+  DEVUELTO
+}
+
+enum estado_solicitud_enum {
+  EN_CURSO
+  COMPLETADO
+  RECHAZADO
+}
+
+enum etapa_solicitud_enum {
+  INGRESO
+  REVISION
+  CALIFICACION
+  CORRECCION
+  DERIVACION
+}
+
+enum origen_discapacidad {
+  F_SICO             @map("FÍSICO")
+  SENSORIAL_VISUAL
+  SENSORIAL_AUDITIVO
+  MENTAL_INTELECTUAL
+  MENTAL_PS_QUICO    @map("MENTAL_PSÍQUICO")
+}
+
+enum rol_funcionario {
+  ENCARGADO_UNIDAD
+  ANALISTA
+  CONSULTOR
+  ADMIN_SISTEMA
+}
+
+enum sexo_enum {
+  M
+  F
+  O
+}
