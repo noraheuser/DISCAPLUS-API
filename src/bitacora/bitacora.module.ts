@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { BitacoraService } from './bitacora.service';
 import { BitacoraController } from './bitacora.controller';
+import { BitacoraService } from './bitacora.service';
 
 @Module({
-  providers: [BitacoraService],
   controllers: [BitacoraController],
+  providers: [BitacoraService],
 })
 export class BitacoraModule {}

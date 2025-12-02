@@ -77,12 +77,14 @@ model solicitud {
   asignado_a                                              Int?
   fecha_ingreso                                           DateTime              @default(now()) @db.Timestamp(6)
   fecha_modificacion                                      DateTime              @default(now()) @db.Timestamp(6)
+  id_derivacion                                           Int?
   bitacora                                                bitacora[]
   duplicados_duplicados_id_solicitud_detectadaTosolicitud duplicados[]          @relation("duplicados_id_solicitud_detectadaTosolicitud")
   duplicados_duplicados_id_solicitud_originalTosolicitud  duplicados[]          @relation("duplicados_id_solicitud_originalTosolicitud")
   revisados                                               revisados[]
   funcionario                                             funcionario?          @relation(fields: [asignado_a], references: [id_funcionario], map: "fk_solicitud_funcionario")
   usuario                                                 usuario               @relation(fields: [id_usuario], references: [id_usuario], onDelete: Cascade, map: "fk_solicitud_usuario")
+  derivacion                                              derivacion?           @relation(fields: [id_derivacion], references: [id_derivacion], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([asignado_a], map: "idx_solicitud_asignado_a")
   @@index([id_usuario], map: "idx_solicitud_usuario")
@@ -103,6 +105,12 @@ model usuario {
   comuna           String      @db.VarChar(50)
   direccion        String?     @db.VarChar(200)
   solicitud        solicitud[]
+}
+
+model derivacion {
+  id_derivacion Int         @id @default(autoincrement())
+  nombre        String      @db.VarChar(200)
+  solicitud     solicitud[]
 }
 
 enum estado_revision_enum {

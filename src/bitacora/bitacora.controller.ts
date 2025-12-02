@@ -1,17 +1,16 @@
 import { Controller } from '@nestjs/common';
 import { BitacoraService } from './bitacora.service';
 import { BaseController } from '../common/base.controller';
-import { Prisma } from '@prisma/client';
 
-@Controller('bitacoras')
+@Controller('bitacora') // si quieres luego lo cambiamos a 'bitacoras'
 export class BitacoraController extends BaseController<
   BitacoraService,
   number,
-  Prisma.bitacoraCreateInput,
-  Prisma.bitacoraUpdateInput
+  any,
+  any
 > {
   constructor(service: BitacoraService) {
-    // Ajusta el nombre si tu PK no es id_bitacora
-    super(service, 'id_bitacora');
+    // La PK de la tabla es id_evento (según tu schema.prisma)
+    super(service, 'id_evento');
   }
 }
