@@ -1,4 +1,6 @@
-import { Controller, Patch, Param, Body } from '@nestjs/common';
+// solicitud.controller.ts
+
+import { Controller, Patch, Param, Body, Get } from '@nestjs/common';
 import { SolicitudService } from './solicitud.service';
 import { BaseController } from '../common/base.controller';
 
@@ -30,4 +32,19 @@ export class SolicitudController extends BaseController<
   ) {
     return this.solicitudService.asignar(Number(id), Number(asignado_a));
   }
+
+  // 🔹 NUEVO: GET /solicitud/asignadas/:id_funcionario
+  @Get('asignadas/:id_funcionario')
+  async asignadas(@Param('id_funcionario') id_funcionario: string) {
+    return this.solicitudService.findAll({
+      where: { asignado_a: Number(id_funcionario) },
+    });
+  }
+  // GET /solicitud/revision/:id_funcionario
+@Get('revision/:id_funcionario')
+async getSolicitudesEnRevision(
+  @Param('id_funcionario') id_funcionario: string,
+) {
+  return this.solicitudService.findEnRevisionPorFuncionario(Number(id_funcionario));
+}
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BaseService } from '../common/base.service';
 
@@ -15,11 +15,12 @@ export class SolicitudService extends BaseService<
     super(prisma.solicitud);
   }
 
-  // 🚫 Ya no tocamos nada automáticamente aquí, update genérico
+  // 🔹 Crear solicitud tal cual llega (sin reglas especiales)
   async create(data: any) {
     return this.prisma.solicitud.create({ data });
   }
 
+  // 🔹 Actualizar solicitud tal cual llegan los datos
   async update(where: SolicitudWhereUnique, data: any) {
     return this.prisma.solicitud.update({
       where,
@@ -27,32 +28,24 @@ export class SolicitudService extends BaseService<
     });
   }
 
-  // ✅ Regla clara para DEVOLVER
-  async devolver(id: number, motivo: string) {
-    return this.prisma.solicitud.update({
-      where: { id_solicitud: id },
-      data: {
-        etapa: 'CORRECCION',
-        asignado_a: null,
-        // si después agregas campo observaciones, aquí guardas "motivo"
-      },
-    });
-  }
-
-  // ✅ NUEVO: regla clara para ASIGNAR / DERIVAR
+  // 🔹 Asignar a un funcionario (usado desde el controller: .asignar)
   async asignar(id: number, idFuncionario: number) {
-    const sol = await this.prisma.solicitud.findUnique({
+    // 1) Traemos la solicitud actual para ver en qué etapa está
+    const solicitudActual = await this.prisma.solicitud.findUnique({
       where: { id_solicitud: id },
     });
 
-    if (!sol) {
-      throw new NotFoundException('Solicitud no encontrada');
+    if (!solicitudActual) {
+      throw new Error('Solicitud no encontrada');
     }
 
-    // Si está en DERIVACION (espera de derivación), pasa a REVISION
+    // 2) Si estaba en DERIVACION, la pasamos a CALIFICACION
     const nuevaEtapa =
-      sol.etapa === 'DERIVACION' ? 'REVISION' : sol.etapa;
+      solicitudActual.etapa === 'DERIVACION'
+        ? 'CALIFICACION'
+        : solicitudActual.etapa;
 
+    // 3) Actualizamos asignado_a y, si corresponde, la etapa
     return this.prisma.solicitud.update({
       where: { id_solicitud: id },
       data: {
@@ -61,4 +54,26 @@ export class SolicitudService extends BaseService<
       },
     });
   }
+
+  // 🔹 Devolver solicitud a CORRECCION
+  async devolver(id: number, motivo: string) {
+    return this.prisma.solicitud.update({
+      where: { id_solicitud: id },
+      data: {
+        etapa: 'CORRECCION',
+        asignado_a: null,
+        // más adelante puedes guardar "motivo" en un campo observaciones
+      },
+    });
+  }
+  async findEnRevisionPorFuncionario(idFuncionario: number) {
+  return this.prisma.solicitud.findMany({
+    where: {
+      asignado_a: idFuncionario,
+      etapa: 'REVISION', // EXACTO EN ENUM BASE
+    },
+    orderBy: { fecha_ingreso: 'desc' },
+  });
+}
+
 }
