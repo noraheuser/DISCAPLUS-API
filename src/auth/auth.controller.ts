@@ -1,28 +1,16 @@
-import { Controller, Post, Body, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+// src/auth/auth.controller.ts
+import { Controller, Post, Body } from '@nestjs/common';
+import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  async login(@Body() body: any) {
-    const { rut } = body;
-
-    const user = await this.prisma.funcionario.findFirst({
-      where: { rut },
-    });
-
-    if (!user) {
-      throw new UnauthorizedException('Usuario no encontrado');
-    }
-
-    return {
-      id_funcionario: user.id_funcionario,
-      nombre: user.nombre_completo,
-      rol: user.rol,
-      rut: user.rut,
-      correo: user.correo,
-    };
+  login(
+    @Body('rut') rut: string,
+    @Body('password') password: string,
+  ) {
+    return this.authService.login(rut, password);
   }
 }

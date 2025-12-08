@@ -1,23 +1,21 @@
+// src/app.module.ts
 import { Module } from '@nestjs/common';
-import { PrismaModule } from './prisma/prisma.module';
-import { FuncionarioModule } from './funcionario/funcionario.module';
-import { BitacoraModule } from './bitacora/bitacora.module';
-import { DuplicadosModule } from './duplicados/duplicados.module';
-import { RevisadosModule } from './revisados/revisados.module';
-import { SolicitudModule } from './solicitud/solicitud.module';
-import { UsuarioModule } from './usuarios/usuario.module';
-import { DerivacionController } from './derivacion/derivacion.controller';
-import { DerivacionService } from './derivacion/derivacion.service';
-
 import { PrismaService } from './prisma/prisma.service';
 
+// módulos de la app
+import { SolicitudModule } from './solicitud/solicitud.module';
+import { UsuarioModule } from './usuarios/usuario.module';      // 👈 carpeta "usuarios"
+import { FuncionarioModule } from './funcionario/funcionario.module';
+import { AuthModule } from './auth/auth.module';
+
 @Module({
-  imports: [PrismaModule, FuncionarioModule, BitacoraModule, DuplicadosModule, RevisadosModule, SolicitudModule, UsuarioModule],
-   controllers: [
-    DerivacionController
+  imports: [
+    AuthModule,        // 👈 para /auth/login
+    SolicitudModule,
+    UsuarioModule,
+    FuncionarioModule,
   ],
-  providers: [
-    DerivacionService
-  ],
+  controllers: [],
+  providers: [PrismaService],
 })
 export class AppModule {}

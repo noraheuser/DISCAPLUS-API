@@ -40,6 +40,7 @@ model funcionario {
   nombre_completo                                     String          @db.VarChar(200)
   correo                                              String          @unique @db.VarChar(150)
   rol                                                 rol_funcionario @default(ANALISTA)
+  password                                            String          @db.VarChar(200)  
   fecha_creacion                                      DateTime        @default(now()) @db.Timestamp(6)
   bitacora                                            bitacora[]
   revisados_revisados_revisado_porTofuncionario       revisados[]     @relation("revisados_revisado_porTofuncionario")

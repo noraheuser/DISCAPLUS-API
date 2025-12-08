@@ -1,6 +1,13 @@
-// solicitud.controller.ts
+// src/solicitud/solicitud.controller.ts
 
-import { Controller, Patch, Param, Body, Get } from '@nestjs/common';
+import {
+  Controller,
+  Patch,
+  Param,
+  Body,
+  Get,
+  Query,
+} from '@nestjs/common';
 import { SolicitudService } from './solicitud.service';
 import { BaseController } from '../common/base.controller';
 
@@ -15,7 +22,13 @@ export class SolicitudController extends BaseController<
     super(solicitudService, 'id_solicitud');
   }
 
-  // PATCH /solicitud/:id/devolver
+  // 🔹 GET /solicitud  (lista con filtros desde el FRONT)
+  @Get()
+  async findAll(@Query() query: any) {
+    return this.solicitudService.findAll(query);
+  }
+
+  // 🔹 PATCH /solicitud/:id/devolver
   @Patch(':id/devolver')
   async devolver(
     @Param('id') id: string,
@@ -24,27 +37,45 @@ export class SolicitudController extends BaseController<
     return this.solicitudService.devolver(Number(id), motivo);
   }
 
-  // PATCH /solicitud/:id/asignar
+  // 🔹 PATCH /solicitud/:id/asignar
   @Patch(':id/asignar')
   async asignar(
     @Param('id') id: string,
     @Body('asignado_a') asignado_a: number,
   ) {
-    return this.solicitudService.asignar(Number(id), Number(asignado_a));
+    return this.solicitudService.asignar(
+      Number(id),
+      Number(asignado_a),
+    );
   }
 
-  // 🔹 NUEVO: GET /solicitud/asignadas/:id_funcionario
+  // 🔹 GET /solicitud/asignadas/:id_funcionario
   @Get('asignadas/:id_funcionario')
   async asignadas(@Param('id_funcionario') id_funcionario: string) {
     return this.solicitudService.findAll({
-      where: { asignado_a: Number(id_funcionario) },
+      asignado_a: Number(id_funcionario),
     });
   }
-  // GET /solicitud/revision/:id_funcionario
-@Get('revision/:id_funcionario')
-async getSolicitudesEnRevision(
-  @Param('id_funcionario') id_funcionario: string,
-) {
-  return this.solicitudService.findEnRevisionPorFuncionario(Number(id_funcionario));
-}
+
+  // 🔹 GET /solicitud/revision/:id_funcionario
+  @Get('revision/:id_funcionario')
+  async getSolicitudesEnRevision(
+    @Param('id_funcionario') id_funcionario: string,
+  ) {
+    return this.solicitudService.findEnRevisionPorFuncionario(
+      Number(id_funcionario),
+    );
+  }
+
+  // 🔥 NUEVO: PATCH /solicitud/:id/aprobar-revision
+  @Patch(':id/aprobar-revision')
+  aprobarRevision(
+    @Param('id') id: string,
+    @Body('id_funcionario') idFuncionario: number,
+  ) {
+    return this.solicitudService.aprobarRevision(
+      Number(id),
+      Number(idFuncionario),
+    );
+  }
 }
