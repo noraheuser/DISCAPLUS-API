@@ -69,8 +69,8 @@ export class SolicitudService extends BaseService<
     });
   }
 
- // Asignar o reasignar una solicitud a un funcionario
-async asignar(id: number, idFuncionario: number) {
+// Asignar, reasignar o dejar SIN asignación
+async asignar(id: number, idFuncionario: number | null, idActor: number) {
   const solicitudActual = await this.prisma.solicitud.findUnique({
     where: { id_solicitud: id },
   });
@@ -79,44 +79,76 @@ async asignar(id: number, idFuncionario: number) {
     throw new Error('Solicitud no encontrada');
   }
 
+  // 👉 1) Quitar asignación
+  if (idFuncionario === null) {
+    const updated = await this.prisma.solicitud.update({
+      where: { id_solicitud: id },
+      data: {
+        asignado_a: null,
+      },
+    });
+
+    await this.prisma.bitacora.create({
+      data: {
+        id_solicitud: id,
+        id_funcionario: idActor,
+        accion: 'DESASIGNAR',
+        observaciones: 'Solicitud dejada sin asignación.',
+      },
+    });
+
+    return updated;
+  }
+
+  // 👉 2) Asignar / reasignar normal
   let nuevaEtapa = solicitudActual.etapa;
 
- // ⭐ Regla clave:
-// SOLO si está en etapa DERIVACION (En espera de derivación) pasa a CALIFICACIÓN
-if (solicitudActual.etapa === 'DERIVACION') {
-  nuevaEtapa = 'CALIFICACION';
-}
+  if (solicitudActual.etapa === 'DERIVACION') {
+    nuevaEtapa = 'CALIFICACION';
+  }
 
-  return this.prisma.solicitud.update({
+  const updated = await this.prisma.solicitud.update({
     where: { id_solicitud: id },
     data: {
       asignado_a: idFuncionario,
       etapa: nuevaEtapa,
     },
   });
+
+  await this.prisma.bitacora.create({
+    data: {
+      id_solicitud: id,
+      id_funcionario: idActor,
+      accion: 'ASIGNAR',
+      observaciones: `Solicitud asignada a funcionario ID ${idFuncionario}.`,
+    },
+  });
+
+  return updated;
 }
 
-  // 🔹 Devolver solicitud a CORRECCION
-  async devolver(id: number, motivo: string) {
-    return this.prisma.solicitud.update({
-      where: { id_solicitud: id },
-      data: {
-        etapa: 'CORRECCION',
-        asignado_a: null,
-      },
-    });
-  }
 
-  // 🔹 Listar solicitudes en REVISION por funcionario (para "Mis casos")
-  async findEnRevisionPorFuncionario(idFuncionario: number) {
-    return this.prisma.solicitud.findMany({
-      where: {
-        asignado_a: idFuncionario,
-        etapa: 'REVISION',
-      },
-      orderBy: { fecha_ingreso: 'desc' },
-    });
-  }
+  /// Devolver solicitud a CORRECCION
+async devolver(id: number, motivo: string, idActor: number) {
+  const updated = await this.prisma.solicitud.update({
+    where: { id_solicitud: id },
+    data: {
+      etapa: 'CORRECCION',
+      asignado_a: null,
+    },
+  });
+
+  await this.prisma.bitacora.create({
+    data: {
+      id_solicitud: id,
+      id_funcionario: idActor,
+      accion: 'DEVOLVER_CORRECCION',
+      observaciones: motivo,
+    },
+  });
+
+  return updated;
+}
 
 
 // Aprobar revisión: pasa a DERIVACION ("En espera de Derivación")
@@ -170,6 +202,16 @@ async aprobarRevision(idSolicitud: number, idFuncionario: number) {
     return solicitudActualizada;
   });
 }
-
-
+  // 🔹 Solicitudes en REVISION de un funcionario específico
+  async findEnRevisionPorFuncionario(idFuncionario: number) {
+    return this.prisma.solicitud.findMany({
+      where: {
+        etapa: 'REVISION',          // enum de etapa
+        asignado_a: idFuncionario,  // solo las que tiene asignadas
+      },
+      orderBy: { fecha_ingreso: 'desc' },
+    });
+  }
 }
+
+

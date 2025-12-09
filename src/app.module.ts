@@ -7,6 +7,7 @@ import { SolicitudModule } from './solicitud/solicitud.module';
 import { UsuarioModule } from './usuarios/usuario.module';      // 👈 carpeta "usuarios"
 import { FuncionarioModule } from './funcionario/funcionario.module';
 import { AuthModule } from './auth/auth.module';
+import { BitacoraModule } from './bitacora/bitacora.module';  // 
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AuthModule } from './auth/auth.module';
     SolicitudModule,
     UsuarioModule,
     FuncionarioModule,
+    BitacoraModule,    
   ],
   controllers: [],
   providers: [PrismaService],

@@ -28,25 +28,42 @@ export class SolicitudController extends BaseController<
     return this.solicitudService.findAll(query);
   }
 
-  // 🔹 PATCH /solicitud/:id/devolver
+  // 🔹 PATCH /solicitud/:id/devolver   👈 NUEVO
   @Patch(':id/devolver')
   async devolver(
     @Param('id') id: string,
-    @Body('motivo') motivo: string,
+    @Body() body: { motivo: string; id_funcionario_actor: number },
   ) {
-    return this.solicitudService.devolver(Number(id), motivo);
+    return this.solicitudService.devolver(
+      Number(id),
+      body.motivo,
+      Number(body.id_funcionario_actor),
+    );
   }
 
   // 🔹 PATCH /solicitud/:id/asignar
   @Patch(':id/asignar')
   async asignar(
     @Param('id') id: string,
-    @Body('asignado_a') asignado_a: number,
+    @Body() body: { asignado_a: number | null | '' },
   ) {
-    return this.solicitudService.asignar(
-      Number(id),
-      Number(asignado_a),
-    );
+    const idSolicitud = Number(id);
+
+    let idFuncionario: number | null;
+    if (
+      body.asignado_a === null ||
+      body.asignado_a === undefined ||
+      body.asignado_a === ('' as any)
+    ) {
+      idFuncionario = null;
+    } else {
+      idFuncionario = Number(body.asignado_a);
+    }
+
+    // recibimos id_funcionario_actor desde el front (ya lo tienes que mandar)
+    const idActor = Number((body as any).id_funcionario_actor);
+
+    return this.solicitudService.asignar(idSolicitud, idFuncionario, idActor);
   }
 
   // 🔹 GET /solicitud/asignadas/:id_funcionario
@@ -67,7 +84,7 @@ export class SolicitudController extends BaseController<
     );
   }
 
-  // 🔥 NUEVO: PATCH /solicitud/:id/aprobar-revision
+  // 🔥 PATCH /solicitud/:id/aprobar-revision
   @Patch(':id/aprobar-revision')
   aprobarRevision(
     @Param('id') id: string,
